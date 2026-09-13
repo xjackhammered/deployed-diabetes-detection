@@ -1,8 +1,6 @@
 # Diabetes Risk Prediction
 
-A machine learning project for early diabetes risk detection, built for the Complex
-Engineering Project: *Comparative Analysis of Machine Learning Algorithms for Early
-Diabetes Prediction*.
+A machine learning project for early diabetes risk detection.
 
 **Live demo:** [diabetes.fardeen-pranto.online](https://diabetes.fardeen-pranto.online)
 
