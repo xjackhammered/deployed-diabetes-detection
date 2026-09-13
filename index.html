@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diabetes Risk Instrument — Live API Demo</title>
+<style>
+  :root{
+    --bg:#F3F6F5;
+    --panel:#FFFFFF;
+    --ink:#12262A;
+    --ink-soft:#4C6367;
+    --teal:#0E5C63;
+    --teal-dark:#0A464C;
+    --hairline:#DCE6E4;
+    --risk-hi:#B84A24;
+    --risk-hi-bg:#FBEDE6;
+    --risk-lo:#1E7F5C;
+    --risk-lo-bg:#E9F5EF;
+    --warn:#B8860B;
+    --warn-bg:#FBF3DE;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    padding:32px 20px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--hairline);
+    padding-bottom:20px;margin-bottom:20px;
+    flex-wrap:wrap;gap:12px;
+  }
+  .brand-eyebrow{
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--teal);font-weight:600;margin:0 0 6px;
+  }
+  h1{
+    font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;
+    font-weight:600;font-size:32px;line-height:1.15;margin:0;color:var(--ink);
+    letter-spacing:-.01em;
+  }
+  .status-badge{
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:12px;color:var(--ink-soft);
+    background:var(--panel);border:1px solid var(--hairline);
+    padding:7px 12px;border-radius:100px;white-space:nowrap;
+  }
+  .status-dot{width:7px;height:7px;border-radius:50%;background:#B7C4C2;flex:none;transition:background .2s;}
+  .status-dot.ok{background:var(--risk-lo);}
+  .status-dot.bad{background:var(--risk-hi);}
+  .status-dot.pending{background:var(--warn);}
+
+  .api-bar{
+    display:flex;gap:10px;align-items:center;background:var(--panel);
+    border:1px solid var(--hairline);border-radius:11px;padding:12px 14px;
+    margin-bottom:22px;flex-wrap:wrap;
+  }
+  .api-bar label{font-size:12.5px;font-weight:600;color:var(--ink-soft);white-space:nowrap;}
+  .api-bar input{
+    flex:1;min-width:220px;padding:8px 10px;border:1px solid var(--hairline);
+    border-radius:7px;font-size:13.5px;font-family:ui-monospace,Menlo,Consolas,monospace;
+    color:var(--ink);background:#FBFDFC;
+  }
+  .api-bar input:focus{outline:2px solid var(--teal);outline-offset:1px;}
+  .api-bar button{
+    padding:8px 14px;border:1px solid var(--teal);border-radius:7px;
+    background:#fff;color:var(--teal);font-weight:600;font-size:13px;
+    cursor:pointer;white-space:nowrap;
+  }
+  .api-bar button:hover{background:var(--teal);color:#fff;}
+  .api-note{font-size:11.5px;color:var(--ink-soft);width:100%;margin-top:2px;}
+
+  .grid{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;}
+  @media (max-width:760px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{background:var(--panel);border:1px solid var(--hairline);border-radius:14px;padding:26px 26px 22px;}
+  .panel h2{
+    font-family:Georgia,serif;font-size:15px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.06em;color:var(--teal-dark);margin:0 0 18px;
+  }
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
+  .field .hint{font-weight:400;color:#8CA0A3;margin-left:4px;}
+  select,input[type=number]{
+    width:100%;padding:10px 11px;border:1px solid var(--hairline);
+    border-radius:8px;font-size:14.5px;color:var(--ink);background:#FBFDFC;font-family:inherit;
+  }
+  select:focus,input:focus{outline:2px solid var(--teal);outline-offset:1px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+  .predict-btn{
+    width:100%;margin-top:6px;padding:13px;border:none;border-radius:9px;
+    background:var(--teal);color:#fff;font-size:15px;font-weight:600;
+    cursor:pointer;font-family:inherit;transition:background .15s ease;
+  }
+  .predict-btn:hover{background:var(--teal-dark);}
+  .predict-btn:disabled{background:#A9BDBE;cursor:not-allowed;}
+
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;padding-top:6px;}
+  svg#gauge{width:100%;max-width:280px;height:auto;}
+  .gauge-readout{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:center;margin-top:2px;}
+  .gauge-pct{font-size:40px;font-weight:700;color:var(--ink);letter-spacing:-.02em;}
+  .gauge-label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px;}
+  .verdict{margin-top:16px;width:100%;text-align:center;padding:11px 10px;border-radius:9px;font-size:14px;font-weight:600;}
+  .verdict.hi{background:var(--risk-hi-bg);color:var(--risk-hi);}
+  .verdict.lo{background:var(--risk-lo-bg);color:var(--risk-lo);}
+  .verdict.empty{background:#F2F5F4;color:#93A5A8;font-weight:500;}
+  .verdict.err{background:var(--warn-bg);color:var(--warn);}
+
+  .stats{margin-top:20px;padding-top:16px;border-top:1px solid var(--hairline);display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
+  .stat b{display:block;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;color:var(--teal-dark);}
+  .stat span{font-size:11px;color:var(--ink-soft);}
+
+  footer{margin-top:26px;font-size:12px;color:#8CA0A3;text-align:center;line-height:1.6;}
+  footer b{color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <p class="brand-eyebrow">Live Demo</p>
+      <h1>Diabetes Risk Instrument</h1>
+    </div>
+    <div class="status-badge"><span class="status-dot" id="statusDot"></span><span id="statusText">Checking API connection…</span></div>
+  </header>
+
+  <div class="api-bar">
+    <label for="apiUrl">API URL</label>
+    <input type="text" id="apiUrl" placeholder="https://your-username-your-space.hf.space" value="https://diabetes.fardeen-pranto.online/api" onkeydown="if(event.key==='Enter'){event.preventDefault();checkHealth();}">
+    <button onclick="checkHealth()">Connect</button>
+  </div>
+
+  <div class="grid">
+
+    <div class="panel">
+      <h2>Patient Readings</h2>
+      <div class="row2">
+        <div class="field"><label>Gender</label>
+          <select id="gender"><option value="0">Female</option><option value="1">Male</option></select>
+        </div>
+        <div class="field"><label>Age <span class="hint">(years)</span></label>
+          <input type="number" id="age" min="1" max="100" value="45">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Hypertension</label>
+          <select id="hypertension"><option value="0">No</option><option value="1">Yes</option></select>
+        </div>
+        <div class="field"><label>Heart Disease</label>
+          <select id="heart_disease"><option value="0">No</option><option value="1">Yes</option></select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>BMI</label>
+          <input type="number" id="bmi" step="0.1" min="10" max="70" value="25.0">
+        </div>
+        <div class="field"><label>HbA1c Level <span class="hint">(%)</span></label>
+          <input type="number" id="hba1c" step="0.1" min="3" max="9.5" value="5.5">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Blood Glucose <span class="hint">(mg/dL)</span></label>
+          <input type="number" id="glucose" min="50" max="300" value="120">
+        </div>
+        <div class="field"><label>Smoking History</label>
+          <select id="smoking">
+            <option value="No Info">No Info</option>
+            <option value="never">Never</option>
+            <option value="former">Former</option>
+            <option value="current">Current</option>
+            <option value="not current">Not current</option>
+            <option value="ever">Ever</option>
+          </select>
+        </div>
+      </div>
+      <button class="predict-btn" id="predictBtn" onclick="runPrediction()">Predict Risk</button>
+    </div>
+
+    <div class="panel">
+      <h2>Model Readout</h2>
+      <div class="gauge-wrap">
+        <svg id="gauge" viewBox="0 0 240 150">
+          <path d="M 20 130 A 100 100 0 0 1 220 130" fill="none" stroke="#E7EEEC" stroke-width="18" stroke-linecap="round"/>
+          <path id="gaugeArc" d="M 20 130 A 100 100 0 0 1 220 130" fill="none" stroke="var(--teal)" stroke-width="18" stroke-linecap="round"
+                stroke-dasharray="0 315" />
+          <line id="needle" x1="120" y1="130" x2="120" y2="45" stroke="#12262A" stroke-width="3" stroke-linecap="round" transform="rotate(-90 120 130)"/>
+          <circle cx="120" cy="130" r="6" fill="#12262A"/>
+        </svg>
+        <div class="gauge-readout">
+          <div class="gauge-pct" id="pctText">—</div>
+          <div class="gauge-label">Predicted Diabetes Probability</div>
+        </div>
+        <div class="verdict empty" id="verdict">Connect the API, then enter readings</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b>XGBoost</b><span>Live model (Hugging Face Space)</span></div>
+        <div class="stat"><b>0.975</b><span>Test ROC-AUC</span></div>
+        <div class="stat"><b>96,128</b><span>Training records (cleaned)</span></div>
+        <div class="stat"><b>0.88</b><span>Test Recall (diabetic class)</span></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const savedUrl = localStorage.getItem('diabetesApiUrl');
+if (savedUrl) document.getElementById('apiUrl').value = savedUrl;
+
+function getApiUrl(){
+  let url = document.getElementById('apiUrl').value.trim();
+  if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+  if (url.endsWith('/')) url = url.slice(0, -1);
+  document.getElementById('apiUrl').value = url;
+  return url;
+}
+
+function setStatus(state, text){
+  const dot = document.getElementById('statusDot');
+  const label = document.getElementById('statusText');
+  dot.className = 'status-dot ' + state;
+  label.textContent = text;
+}
+
+async function checkHealth(){
+  const url = getApiUrl();
+  if (!url){ setStatus('bad', 'Enter an API URL above'); return; }
+  localStorage.setItem('diabetesApiUrl', url);
+  setStatus('pending', 'Connecting…');
+  setStatus('pending', 'Connecting… (may take up to a minute if the service was asleep)');
+  try{
+    const res = await fetch(url + '/', { method: 'GET' });
+    if (!res.ok) throw new Error('Server responded with status ' + res.status);
+    setStatus('ok', 'Connected to live API');
+  }catch(e){
+    setStatus('bad', 'Could not reach API: ' + e.message);
+  }
+}
+
+function buildPayload(){
+  return {
+    gender: parseInt(document.getElementById('gender').value),
+    age: parseFloat(document.getElementById('age').value),
+    hypertension: parseInt(document.getElementById('hypertension').value),
+    heart_disease: parseInt(document.getElementById('heart_disease').value),
+    bmi: parseFloat(document.getElementById('bmi').value),
+    hba1c: parseFloat(document.getElementById('hba1c').value),
+    glucose: parseFloat(document.getElementById('glucose').value),
+    smoking_history: document.getElementById('smoking').value,
+  };
+}
+
+function updateGauge(p){
+  const pct = Math.round(p * 100);
+  document.getElementById('pctText').textContent = pct + '%';
+  const arcLen = 314.16;
+  document.getElementById('gaugeArc').setAttribute('stroke-dasharray', (arcLen * p) + ' ' + arcLen);
+  const angle = -90 + (180 * p);
+  document.getElementById('needle').setAttribute('transform', `rotate(${angle} 120 130)`);
+}
+
+async function runPrediction(){
+  const url = getApiUrl();
+  const verdict = document.getElementById('verdict');
+  const btn = document.getElementById('predictBtn');
+
+  if (!url){
+    verdict.className = 'verdict err';
+    verdict.textContent = 'Enter and connect an API URL first';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Predicting…';
+
+  try{
+    const res = await fetch(url + '/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildPayload()),
+    });
+    if (!res.ok) throw new Error('Request failed: ' + res.status);
+    const data = await res.json();
+    const p = data.probability;
+
+    updateGauge(p);
+    verdict.classList.remove('hi','lo','empty','err');
+    if (p >= 0.5){
+      verdict.classList.add('hi');
+      verdict.textContent = '⚠ Higher diabetes risk predicted';
+    } else {
+      verdict.classList.add('lo');
+      verdict.textContent = '✓ Lower diabetes risk predicted';
+    }
+    setStatus('ok', 'Connected to live API');
+  }catch(e){
+    verdict.className = 'verdict err';
+    verdict.textContent = 'Prediction failed: ' + e.message;
+    setStatus('bad', 'API request failed');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Predict Risk';
+  }
+}
+
+if (savedUrl) checkHealth();
+</script>
+</body>
+</html>

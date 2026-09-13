@@ -1,0 +1,7 @@
+services:
+  diabetes-api:
+    build: ./backend
+    container_name: diabetes-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:7860"
